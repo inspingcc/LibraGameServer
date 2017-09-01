@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ModuleTypes>
+	<!-- 普通消息 -->
+	<ModuleType moduleId="0x00000001" moduleClass="com.insping.libra.net.proto.ResGeneral$GeneralData" function="普通消息模块"/>
+</ModuleTypes>
