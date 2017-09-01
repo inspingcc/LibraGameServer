@@ -1,3 +1,5 @@
 .settings
 target
 .idea
+config/redis.properties
+config/jdbc.properties

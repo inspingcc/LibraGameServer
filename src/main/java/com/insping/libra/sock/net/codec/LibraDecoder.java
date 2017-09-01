@@ -5,7 +5,6 @@ import java.util.List;
 
 import com.google.protobuf.MessageLite;
 import com.insping.Instances;
-import com.insping.libra.proto.ReqHttpMessage.ReqHttpMessageData;
 import com.insping.libra.proto.ResGeneral.GeneralData;
 import com.insping.libra.sock.net.codec.data.LibraHead;
 import com.insping.libra.sock.net.codec.data.LibraMessage;
