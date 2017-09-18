@@ -1,21 +1,20 @@
 package com.insping.libra.sock.net.codec;
 
-import java.util.Arrays;
-import java.util.List;
-
 import com.google.protobuf.MessageLite;
 import com.insping.Instances;
 import com.insping.libra.proto.ResGeneral.GeneralData;
 import com.insping.libra.sock.net.codec.data.LibraHead;
 import com.insping.libra.sock.net.codec.data.LibraMessage;
-import com.insping.libra.sock.net.codec.data.LibraMessageType;
 import com.insping.libra.sock.net.codec.data.UserInfo;
+import com.insping.libra.sock.net.response.module.ModuleType;
 import com.insping.log.LibraLog;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.EmptyByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
+
+import java.util.Arrays;
+import java.util.List;
 
 public class LibraDecoder extends ByteToMessageDecoder implements Instances {
 
@@ -67,25 +66,11 @@ public class LibraDecoder extends ByteToMessageDecoder implements Instances {
                 offset = 0;
             }
             byte[] result = Arrays.copyOfRange(array, offset, readableLen);
-            LibraMessageType messageType = LibraMessageType.search(head.getType());
-            if (messageType == null){
-                LibraLog.error("LibraDecoder-decode : type is null , type value = " + head.getType());
-                return;
-            }
-            switch (messageType) {
-                case SERVER_REGISTER_RESP:
-                case SERVER_HEARTBEAT_RESP: {
-                    message.setBody(GeneralData.parseFrom(result));
-                    break;
-                }
-                case MESSAGE_REQ: {
-                    // 解析body
-                    message.setBody(decoderBody(head.getProtocolID(), result));
-                    break;
-                }
-                default:
-                    LibraLog.info("LibraDecoder-decode : libraMessage Type is default. type = " + head.getType());
-                    break;
+            if(head.getProtocolID() == ModuleType.GENERAL_RESPONSE){
+                message.setBody(GeneralData.parseFrom(result));
+            }else {
+                // 解析body
+                message.setBody(decoderBody(head.getProtocolID(), result));
             }
             out.add(message);
         } catch (Exception e) {
@@ -97,10 +82,10 @@ public class LibraDecoder extends ByteToMessageDecoder implements Instances {
     private Object decoderBody(int protocolId, byte[] array) throws Exception {
         MessageLite messageLite = handlerMgr.searchMessage(protocolId);
         if (messageLite == null) {
-            LibraLog.error("LibraDecoder-decoderBody : messagLite is null.protocolId = " + protocolId);
+            LibraLog.error("LibraDecoder-decoderBody : messageLite is null.protocolId = " + protocolId);
             return null;
         }
-        return messageLite.getDefaultInstanceForType().getParserForType().parseFrom(array);
+        return messageLite.getParserForType().parseFrom(array);
     }
 
 }

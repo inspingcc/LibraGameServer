@@ -4,9 +4,9 @@ import com.insping.Instances;
 import com.insping.common.utils.TimeUtils;
 import com.insping.libra.proto.ReqServerRegist.ServerRegistData;
 import com.insping.libra.proto.ResGeneral.GeneralData;
+import com.insping.libra.sock.net.response.module.ModuleType;
 import com.insping.libra.sock.net.codec.data.LibraHead;
 import com.insping.libra.sock.net.codec.data.LibraMessage;
-import com.insping.libra.sock.net.codec.data.LibraMessageType;
 import com.insping.libra.sock.net.response.GeneralResponse;
 import com.insping.libra.world.LibraConfig;
 import com.insping.log.LibraLog;
@@ -37,10 +37,10 @@ public class ServerRegisterHandler extends ChannelInboundHandlerAdapter implemen
         // 数据Head
         LibraHead head = new LibraHead();
         head.setDestServerID(LibraConfig.SERVER_ID);
-        head.setSrcServerID(0);
-        head.setType(LibraMessageType.SERVER_REGISTER_REQ.getValue());
-        head.setProtocolID(0);
-        head.setMessageID(0);
+        head.setSrcServerID(LibraConfig.GATEWAY_SERVER_ID);
+        //head.setType(LibraMessageType.SERVER_REGISTER_REQ.getValue());
+        head.setProtocolID(ModuleType.SERVER_REGISTER);
+        //head.setMessageID(0);
         LibraMessage message = new LibraMessage(head, builder.build());
         ctx.writeAndFlush(message);
     }
@@ -48,14 +48,16 @@ public class ServerRegisterHandler extends ChannelInboundHandlerAdapter implemen
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         LibraMessage message = (LibraMessage) msg;
-        if (message.getHead() != null && message.getHead().getType() == LibraMessageType.SERVER_REGISTER_RESP.getValue()) {
+        if (message.getHead() != null && message.getHead().getSrcServerID() == LibraConfig.SERVER_ID) {
             GeneralData data = (GeneralData) message.getBody();
-            if (data.getResultCode() == GeneralResponse.RESP_FAIL) {
-                // 握手失败，关闭连接
-                ctx.close();
-            } else {
-                LibraLog.info("ServerRegisterHandler-channelRead :Server regist is success!");
-                ctx.fireChannelRead(msg);
+            if (data.getProtocolID() == ModuleType.SERVER_REGISTER) {
+                if (data.getResultCode() == GeneralResponse.RESP_FAIL) {
+                    // 握手失败，关闭连接
+                    ctx.close();
+                } else {
+                    LibraLog.info("ServerRegisterHandler-channelRead :Server regist is success!");
+                    ctx.fireChannelRead(msg);
+                }
             }
         } else {
             ctx.fireChannelRead(msg);

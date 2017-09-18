@@ -5,9 +5,10 @@ import java.util.concurrent.TimeUnit;
 import com.insping.Instances;
 import com.insping.common.utils.TimeUtils;
 import com.insping.libra.proto.ReqServerHeartbeat.HeartbeatData;
+import com.insping.libra.proto.ResGeneral;
+import com.insping.libra.sock.net.response.module.ModuleType;
 import com.insping.libra.sock.net.codec.data.LibraHead;
 import com.insping.libra.sock.net.codec.data.LibraMessage;
-import com.insping.libra.sock.net.codec.data.LibraMessageType;
 import com.insping.libra.world.LibraConfig;
 import com.insping.log.LibraLog;
 
@@ -25,10 +26,14 @@ public class HeartbeatHandler extends ChannelInboundHandlerAdapter implements In
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         LibraMessage message = (LibraMessage) msg;
+        if (message.getHead() == null || message.getHead().getSrcServerID() != LibraConfig.SERVER_ID) {
+            ctx.fireChannelRead(msg);
+            return;
+        }
         // 握手成功，主动发送心跳消息
-        if (message.getHead() != null && message.getHead().getType() == LibraMessageType.SERVER_REGISTER_RESP.getValue()) {
-            heartBeat = ctx.executor().scheduleAtFixedRate(new HeartBeatTask(ctx), 0, 30 * 1000, TimeUnit.MILLISECONDS);
-        } else if (message.getHead() != null && message.getHead().getType() == LibraMessageType.SERVER_HEARTBEAT_RESP.getValue()) {
+        if (((ResGeneral.GeneralData) message.getBody()).getProtocolID() == ModuleType.SERVER_REGISTER) {
+            heartBeat = ctx.executor().scheduleAtFixedRate(new HeartBeatTask(ctx), 0, LibraConfig.SERVER_HEARTBEAT_PERIOD, TimeUnit.MILLISECONDS);
+        } else if (((ResGeneral.GeneralData) message.getBody()).getProtocolID() == ModuleType.SERVER_HEARTBEAT) {
             LibraLog.info("HeartbeatHandler-channelRead : receive GatewayServer heartbeat message ! ");
         } else {
             ctx.fireChannelRead(msg);
@@ -61,10 +66,10 @@ public class HeartbeatHandler extends ChannelInboundHandlerAdapter implements In
             // 数据Head
             LibraHead head = new LibraHead();
             head.setDestServerID(LibraConfig.SERVER_ID);
-            head.setSrcServerID(0);
-            head.setType(LibraMessageType.SERVER_HEARTBEAT_REQ.getValue());
-            head.setProtocolID(0);
-            head.setMessageID(0);
+            head.setSrcServerID(LibraConfig.GATEWAY_SERVER_ID);
+            //head.setType(LibraMessageType.SERVER_HEARTBEAT_REQ.getValue());
+            head.setProtocolID(ModuleType.SERVER_HEARTBEAT);
+            //head.setMessageID(0);
             return new LibraMessage(head, builder.build());
         }
     }
