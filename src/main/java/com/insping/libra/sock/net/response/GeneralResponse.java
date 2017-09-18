@@ -4,22 +4,22 @@ import com.insping.libra.proto.ResGeneral.GeneralData;
 import com.insping.libra.sock.net.codec.data.LibraHead;
 import com.insping.libra.sock.net.codec.data.LibraMessage;
 import com.insping.libra.sock.net.codec.data.UserInfo;
+import com.insping.libra.sock.net.module.ModuleType;
+import com.insping.libra.world.LibraConfig;
 
 public class GeneralResponse {
     public static final byte RESP_SUCC = 0;
     public static final byte RESP_FAIL = 1;
 
-    UserInfo userInfo = null;
-    GeneralData.Builder builder = null;
+    UserInfo userInfo = new UserInfo();
+    GeneralData.Builder builder = GeneralData.newBuilder();
 
     public GeneralResponse() {
-
+        builder.setResultCode(RESP_SUCC);
     }
 
     public GeneralResponse(UserInfo userInfo, LibraMessage message) {
-        // super(LibraHead.createHead(uid, 1),GeneralData.newBuilder().build());
         this.userInfo = userInfo;
-        builder = GeneralData.newBuilder();
         builder.setProtocolID(message.getHead().getProtocolID());
         builder.setResultCode(RESP_SUCC);
     }
@@ -36,16 +36,23 @@ public class GeneralResponse {
     public boolean isSucc() {
         return builder.getResultCode() == RESP_SUCC;
     }
+    public boolean isFail() {
+        return builder.getResultCode() == RESP_FAIL;
+    }
+
 
     public void setDesc(String desc) {
         builder.setDesc(desc);
     }
 
-    public void modifyUserInfo(long uid) {
-        this.userInfo.setUid(uid);
-    }
-
-    public LibraMessage result() throws Exception {
-        return new LibraMessage(LibraHead.createHead(this.userInfo.getUid(), 1), builder.build());
+    public LibraMessage build(LibraMessage message) throws Exception {
+        LibraHead head = new LibraHead();
+        head.setUserInfo(message.getHead().getUserInfo());
+        head.setDestServerID(LibraConfig.SERVER_ID);
+        head.setSrcServerID(message.getHead().getDestServerID());
+        head.setProtocolID(ModuleType.GENERAL_RESPONSE);
+        // head.setUserInfo(message.getHead().getUserInfo());
+        builder.setProtocolID(message.getHead().getProtocolID());
+        return new LibraMessage(head, builder.build());
     }
 }

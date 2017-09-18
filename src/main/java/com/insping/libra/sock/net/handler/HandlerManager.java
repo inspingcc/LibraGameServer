@@ -1,12 +1,7 @@
 package com.insping.libra.sock.net.handler;
 
-import java.io.File;
-import java.io.IOException;
 import java.lang.reflect.Method;
-import java.net.URL;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import com.google.protobuf.MessageLite;
@@ -30,7 +25,7 @@ public class HandlerManager {
     /**
      * 协议对应的解析类的集合
      */
-    Map<Integer, MessageLite> protocols = new HashMap<>();
+    Map<Integer, MessageLite> protobufs = new HashMap<>();
     /**
      * 解析类对应的业务类的集合
      */
@@ -49,9 +44,6 @@ public class HandlerManager {
         registerHandlers();
         // 注册上行数据序列化Map
         registerModules();
-
-        // 注册下行数据反序列化及其对应业务类
-        // registerHandlers();
     }
 
     /**
@@ -64,35 +56,35 @@ public class HandlerManager {
             Element element = document.getDocumentElement();
             Element[] elements = XmlUtils.getChildrenByName(element, "ServiceHandler");
             for (int i = 0; i < elements.length; ++i) {
-                String code = XmlUtils.getAttribute(elements[i], "orderCode");
-                String protocolClassName = XmlUtils.getAttribute(elements[i], "protocolClass");
+                String code = XmlUtils.getAttribute(elements[i], "protocolCode");
+                String protobufClassName = XmlUtils.getAttribute(elements[i], "protobufClass");
                 String handlerClassName = XmlUtils.getAttribute(elements[i], "handlerClass");
                 int protocolId = Integer.parseInt(code.toLowerCase().replaceFirst("0x", ""), 16);
-
-                // 协议类
-                Class<? extends MessageLite> pclazz = (Class<? extends MessageLite>) Class.forName(protocolClassName);
+                // protobuf类
+                Class<? extends MessageLite> pclazz = (Class<? extends MessageLite>) Class.forName(protobufClassName);
                 Method method = pclazz.getMethod("getDefaultInstance");
                 Object phandler = method.invoke(null);
                 if (phandler == null || !(phandler instanceof MessageLite)) {
-                    LibraLog.info("protocolClassName is error! code = " + code + "protocolClass: " + protocolClassName + " || handlerClass " + handlerClassName);
+                    LibraLog.info("protocolClassName is error! code = " + code + "protocolClass: " + protobufClassName + " || handlerClass " + handlerClassName);
                     continue;
                 }
                 // 处理类
                 Class<? extends ServerHandler> hclazz = (Class<? extends ServerHandler>) Class.forName(handlerClassName);
                 ServerHandler handler = hclazz.newInstance();
+                LibraLog.info("register protobufClass: " + protobufClassName + " || handlerClass " + handlerClassName + " code =" + code);
 
-                LibraLog.info("regist protocolClass: " + protocolClassName + " || handlerClass " + handlerClassName + " code =" + code);
-
-                // 存储protocol
-                if (protocols.containsKey(protocolId)) {
-                    System.out.println(new Exception("protocols>>>" + protocols.get(protocolId) + "  had  registed by " + protocolId));
+                // 存储protobuf类
+                if (protobufs.containsKey(protocolId)) {
+                    LibraLog.info("protobufs>>>" + protobufs.get(protocolId) + "  had  registed by " + protocolId);
+                } else {
+                    protobufs.put(protocolId, (MessageLite) phandler);
                 }
-                protocols.put(protocolId, (MessageLite) phandler);
                 // 存储handler
                 if (handlers.containsKey(protocolId)) {
-                    System.out.println(new Exception("handlers>>>" + protocols.get(protocolId) + "  had  registed by " + protocolId));
+                    LibraLog.info("handlers>>>" + protobufs.get(protocolId) + "  had  registed by " + protocolId);
+                } else {
+                    handlers.put(protocolId, handler);
                 }
-                handlers.put(protocolId, handler);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -131,7 +123,7 @@ public class HandlerManager {
      * @return
      */
     public MessageLite searchMessage(Integer protocolId) {
-        return protocols.get(protocolId);
+        return protobufs.get(protocolId);
     }
 
     /**

@@ -33,7 +33,7 @@ public class I18nGreeting {
 	// for (int i = 0; i < params.length; i++) {
 	// Object parma = params[i];
 	// String regix = "{" + i + "}";
-	// result = result.replace(regix, parma.toString());
+	// build = build.replace(regix, parma.toString());
 	// }
 	// }
 	// return result;

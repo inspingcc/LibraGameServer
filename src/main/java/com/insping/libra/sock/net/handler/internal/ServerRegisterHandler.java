@@ -4,7 +4,7 @@ import com.insping.Instances;
 import com.insping.common.utils.TimeUtils;
 import com.insping.libra.proto.ReqServerRegist.ServerRegistData;
 import com.insping.libra.proto.ResGeneral.GeneralData;
-import com.insping.libra.sock.net.response.module.ModuleType;
+import com.insping.libra.sock.net.module.ModuleType;
 import com.insping.libra.sock.net.codec.data.LibraHead;
 import com.insping.libra.sock.net.codec.data.LibraMessage;
 import com.insping.libra.sock.net.response.GeneralResponse;
@@ -48,7 +48,7 @@ public class ServerRegisterHandler extends ChannelInboundHandlerAdapter implemen
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         LibraMessage message = (LibraMessage) msg;
-        if (message.getHead() != null && message.getHead().getSrcServerID() == LibraConfig.SERVER_ID) {
+        if (message.getHead() != null && message.getHead().getSrcServerID() == LibraConfig.SERVER_ID && message.getBody() instanceof GeneralData) {
             GeneralData data = (GeneralData) message.getBody();
             if (data.getProtocolID() == ModuleType.SERVER_REGISTER) {
                 if (data.getResultCode() == GeneralResponse.RESP_FAIL) {
@@ -56,6 +56,7 @@ public class ServerRegisterHandler extends ChannelInboundHandlerAdapter implemen
                     ctx.close();
                 } else {
                     LibraLog.info("ServerRegisterHandler-channelRead :Server regist is success!");
+                    //TODO 握手成功 存储当前连接通道
                     ctx.fireChannelRead(msg);
                 }
             }

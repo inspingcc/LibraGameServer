@@ -6,7 +6,7 @@ import com.insping.libra.proto.ResGeneral.GeneralData;
 import com.insping.libra.sock.net.codec.data.LibraHead;
 import com.insping.libra.sock.net.codec.data.LibraMessage;
 import com.insping.libra.sock.net.codec.data.UserInfo;
-import com.insping.libra.sock.net.response.module.ModuleType;
+import com.insping.libra.sock.net.module.ModuleType;
 import com.insping.log.LibraLog;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.EmptyByteBuf;
@@ -66,9 +66,9 @@ public class LibraDecoder extends ByteToMessageDecoder implements Instances {
                 offset = 0;
             }
             byte[] result = Arrays.copyOfRange(array, offset, readableLen);
-            if(head.getProtocolID() == ModuleType.GENERAL_RESPONSE){
+            if (head.getProtocolID() == ModuleType.GENERAL_RESPONSE) {
                 message.setBody(GeneralData.parseFrom(result));
-            }else {
+            } else {
                 // 解析body
                 message.setBody(decoderBody(head.getProtocolID(), result));
             }

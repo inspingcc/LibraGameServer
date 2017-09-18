@@ -6,7 +6,7 @@ import com.insping.Instances;
 import com.insping.common.utils.TimeUtils;
 import com.insping.libra.proto.ReqServerHeartbeat.HeartbeatData;
 import com.insping.libra.proto.ResGeneral;
-import com.insping.libra.sock.net.response.module.ModuleType;
+import com.insping.libra.sock.net.module.ModuleType;
 import com.insping.libra.sock.net.codec.data.LibraHead;
 import com.insping.libra.sock.net.codec.data.LibraMessage;
 import com.insping.libra.world.LibraConfig;
@@ -26,7 +26,7 @@ public class HeartbeatHandler extends ChannelInboundHandlerAdapter implements In
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         LibraMessage message = (LibraMessage) msg;
-        if (message.getHead() == null || message.getHead().getSrcServerID() != LibraConfig.SERVER_ID) {
+        if (message.getHead() == null || message.getHead().getSrcServerID() != LibraConfig.SERVER_ID || !(message.getBody() instanceof ResGeneral.GeneralData)) {
             ctx.fireChannelRead(msg);
             return;
         }
@@ -35,8 +35,6 @@ public class HeartbeatHandler extends ChannelInboundHandlerAdapter implements In
             heartBeat = ctx.executor().scheduleAtFixedRate(new HeartBeatTask(ctx), 0, LibraConfig.SERVER_HEARTBEAT_PERIOD, TimeUnit.MILLISECONDS);
         } else if (((ResGeneral.GeneralData) message.getBody()).getProtocolID() == ModuleType.SERVER_HEARTBEAT) {
             LibraLog.info("HeartbeatHandler-channelRead : receive GatewayServer heartbeat message ! ");
-        } else {
-            ctx.fireChannelRead(msg);
         }
     }
 
@@ -51,7 +49,7 @@ public class HeartbeatHandler extends ChannelInboundHandlerAdapter implements In
         public void run() {
             LibraMessage heatBeat = buildHeatBeat();
             LibraLog.info("HeartBeatTask-run : send heartbeat to GatewayServer!");
-            ctx.writeAndFlush(heatBeat);
+            ctx.channel().writeAndFlush(heatBeat);
         }
 
         private LibraMessage buildHeatBeat() {
